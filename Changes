@@ -19,3 +19,7 @@ Revision history for Perl extension Net::Whois::IANA.
 0.05  Tue Sep 28 10:45:17 IST 2004
 	- patched APNIC parsing response (patch submitted by
 	Anonymous <smallpond@juno.com>)
+
+0.06  Sun Oct 31 10:39:17 IST 2004
+	- removed a harmless "uninitialized value" warning
+	cause pointed by Jake Commander <jc1@ukfirst.com> .
