@@ -6,3 +6,7 @@ Revision history for Perl extension Net::Whois::IANA.
 
 0.02  Tue Jul 15 11:41:18 2003
 	- fixed a few lines in test.
+
+0.03  Tue Oct 21 12:06:39 2003
+	- fixed the changed APNIC response parser.
+	  Thanks to Jason Heath for pointing that problem out.
