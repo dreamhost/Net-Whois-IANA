@@ -1,6 +1,5 @@
 use Test::Simple tests=>2;
-#use Net::Whois::IANA;
-use IANA;
+use Net::Whois::IANA;
 my $iana = new Net::Whois::IANA;
 my $ip = '200.160.2.15';
 $iana->whois_query(-ip=>$ip,-whois=>'lacnic');

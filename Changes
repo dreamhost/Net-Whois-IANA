@@ -4,3 +4,5 @@ Revision history for Perl extension Net::Whois::IANA.
 	- original version; created by h2xs 1.22 with options
 		-AX -n Net::Whois::IANA
 
+0.02  Tue Jul 15 11:41:18 2003
+	- fixed a few lines in test.
