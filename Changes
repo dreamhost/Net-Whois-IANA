@@ -15,3 +15,7 @@ Revision history for Perl extension Net::Whois::IANA.
 	- moved arin as the last server to query because it
 	  contains too much information about IPs outside its
 	  own zone.
+
+0.05  Tue Sep 28 10:45:17 IST 2004
+	- patched APNIC parsing response (patch submitted by
+	Anonymous <smallpond@juno.com>)

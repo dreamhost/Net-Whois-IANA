@@ -36,7 +36,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 sub new {
 
@@ -191,7 +191,9 @@ sub apnic_query {
     if (defined $query{remarks} && $query{remarks} =~ /address range is not administered by APNIC/) {
 	%query = ();
     }
-    if (defined $query{descr} && $query{descr} =~/Not allocated by APNIC/i) {
+    if (defined $query{descr} &&
+       ($query{descr} =~/Not allocated by APNIC/i) ||
+       ($query{descr} =~/not allocated to APNIC/i)) {
 	%query = ();
     }
     return %query;
