@@ -36,7 +36,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 sub new {
 
@@ -192,7 +192,7 @@ sub apnic_query {
 	%query = ();
     }
     if (defined $query{descr} &&
-       ($query{descr} =~ /not allocated to APNIC/i)) {
+       ($query{descr} =~ /not allocated to|by APNIC/i)) {
 	%query = ();
     }
     return %query;
