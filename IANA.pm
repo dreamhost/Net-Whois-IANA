@@ -7,7 +7,7 @@ use IO::Socket;
 use Carp;
 use Exporter;
 
-our @IANA = qw(ripe apnic arin lacnic);
+our @IANA = qw(ripe apnic lacnic arin);
 
 our %IANA = (apnic=>
 	     ['whois.apnic.net',43,30],
@@ -36,7 +36,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub new {
 
