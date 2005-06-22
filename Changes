@@ -32,3 +32,5 @@ Revision history for Perl extension Net::Whois::IANA.
 	- added support for the new AFRINIC server. See also
 	CAVEATS section of the manual.
 
+0.09  Wed Jun 22 11:59:38 IDT 2005
+	- added a test for AFRINIC server

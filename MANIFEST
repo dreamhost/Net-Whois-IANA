@@ -7,4 +7,5 @@ t/apnic.t
 t/arin.t
 t/lacnic.t
 t/ripe.t
+t/afrinic.t
 META.yml                                 Module meta-data (added by MakeMaker)
