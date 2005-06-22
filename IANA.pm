@@ -7,7 +7,7 @@ use IO::Socket;
 use Carp;
 use Exporter;
 
-our @IANA = qw(ripe apnic lacnic arin);
+our @IANA = qw(ripe afrinic apnic lacnic arin);
 
 our %IANA = (apnic=>
 	     ['whois.apnic.net',43,30],
@@ -16,7 +16,9 @@ our %IANA = (apnic=>
 	     arin=>
 	     ['whois.arin.net',43,30],
 	     lacnic=>
-	     ['whois.lacnic.net',43,30]
+	     ['whois.lacnic.net',43,30],
+	     afrinic=>
+	     ['whois.afrinic.net',43,30],
 	    );
 
 
@@ -36,7 +38,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 sub new {
 
@@ -103,6 +105,9 @@ sub whois_query {
 	}
 	elsif ($server eq 'lacnic') {
 	    %query = &lacnic_query($sock,$param{-ip});
+	}
+	elsif ($server eq 'afrinic') {
+            %query = &afrinic_query($sock,$param{-ip});
 	}
 	else {
 	    %query = &default_query($sock,$param{-ip});
@@ -307,6 +312,36 @@ nd time");
     }
     return($sock);
 }
+sub afrinic_query {
+    
+    my $sock = shift;
+    my $ip = shift; 
+    my %query = (); 
+        
+    $query{fullinfo} = '';
+    print $sock "-r $ip\n";
+    while (<$sock>) {
+        $query{fullinfo} .= $_;
+        if (/^\%201/) {
+            close $sock;
+            return (permission=>'denied');
+        }
+        next if (/^\%/);
+        next if (!/\:/);
+        last if (/^route/);
+        s/\s+$//;
+        my ($field,$value) = split(/:/);
+        $value =~ s/^\s+//;
+        $query{$field} .= $value;
+    }       
+    $query{permission} = 'allowed';
+    close $sock;
+    if (defined $query{remarks} && $query{remarks} =~ /The country is really
+worldwide/) {
+        %query = ();
+    }   
+    return %query;
+}           
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!
@@ -334,9 +369,9 @@ Net::Whois::IANA - A universal WHOIS data extractor.
 
   This is a simple module to extract the descriptive whois
 information about various IPs as they are stored in the four
-regional whois registries of IANA - RIPE (Europe, Middle East,
-North Africa), APNIC (Asia/Pacific), ARIN (North America and
-Africa) and LACNIC (Latin American & Caribbean).
+regional whois registries of IANA - RIPE (Europe, Middle East)
+APNIC (Asia/Pacific), ARIN (North America), AFRINIC (Africa) 
+and LACNIC (Latin American & Caribbean).
 
   It is designed to serve statistical harvesters of various
 access logs and likewise, therefore it only collects partial
@@ -437,6 +472,15 @@ homogeneous and precise because of the differences between
 outputs of the IANA servers and because of some inconsistencies
 within each one of them. Its primary target is to collect info
 for general, shallow statistical purposes.
+
+=head1 CAVEATS
+  
+  The introduction of AFRINIC server may create some confusion
+among servers. It might be that some entries are existant either in
+both ARIN and AFRINIC or in both RIPE and AFRINIC, and some do not
+exist at all. Moreover, there is a border confusion between Middle
+East and Africa, thus, some Egypt sites appear under RIPE and some
+under AFRINIC.
 
 =head1 SEE ALSO
 
