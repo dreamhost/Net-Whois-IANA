@@ -7,7 +7,9 @@ use IO::Socket;
 use Carp;
 use Exporter;
 
-our @IANA = qw(ripe afrinic apnic lacnic arin);
+use Net::CIDR;
+
+our @IANA = qw(ripe afrinic apnic arin lacnic);
 
 our %IANA = (apnic=>
 	     ['whois.apnic.net',43,30],
@@ -38,7 +40,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 sub new {
 
@@ -64,6 +66,8 @@ sub source   {my $self = shift; return $self->{QUERY}->{source}
 		if defined $self->{QUERY}->{source}};
 sub server   {my $self = shift; return $self->{QUERY}->{server}
 		if defined $self->{QUERY}->{server}};
+sub cidr     {my $self = shift; return $self->{QUERY}->{cidr}
+		if defined $self->{QUERY}->{cidr}};
 sub fullinfo {my $self = shift; return $self->{QUERY}->{fullinfo}
 		if defined $self->{QUERY}->{fullinfo}};
 
@@ -75,8 +79,12 @@ sub whois_query {
     my @source = @IANA;
 
     if (! $param{-ip}) {
-	print 'Usage: $iana->whois_query(-ip=>$ip,-whois=>$whois|-mywhois=>\%mywhois)';
-	print "\n";
+	print "
+Usage: \$iana->whois_query(\n
+                          -ip=>\$ip,\n
+                          -debug=>\$debug,\n
+                          -whois=>\$whois|-mywhois=>\%mywhois,\n
+)\n";
     }
     if ($param{-whois}) {
 	%source = ();
@@ -89,6 +97,7 @@ sub whois_query {
 	@source = keys %{$param{-mywhois}};
     }
     for my $server (@source) {
+	print "Querying $server ...\n" if $param{-debug};
 	my $host    = ${$source{$server}}[0];
 	my $port    = ${$source{$server}}[1];
 	my $timeout = ${$source{$server}}[2];
@@ -119,9 +128,9 @@ sub whois_query {
 	}
 	$query{server} = uc $server;
 	for (sort keys %query) {
-	    chomp $query{$_};
+	    chomp $query{$_} if defined $query{$_};
 	}
-	$self->{QUERY} = \%query;
+	$self->{QUERY} = {%query};
 	return $self;
     }
     return {};
@@ -140,22 +149,28 @@ sub ripe_query {
     print $sock "-r $ip\n";
     while (<$sock>) {
 	$query{fullinfo} .= $_;
-	if (/^\%201/) {
+	if (/ERROR:201/) {
 	    close $sock;
 	    return (permission=>'denied');
 	}
 	next if (/^\%/);
 	next if (!/\:/);
-	last if (/^route/);
 	s/\s+$//;
 	my ($field,$value) = split(/:/);
 	$value =~ s/^\s+//;
 	$query{$field} .= $value;
+	last if (/^route/);
     }
-    $query{permission} = 'allowed';
     close $sock;
-    if (defined $query{remarks} && $query{remarks} =~ /The country is really worldwide/) {
+    if ((defined $query{remarks} &&
+	 $query{remarks} =~ /The country is really world wide/) ||
+	$query{netname} =~ /IANA-BLK/ ||
+	$query{country} =~ /world wide/) {
 	%query = ();
+    }
+    else {
+	$query{permission} = 'allowed';
+        $query{cidr} = Net::CIDR::range2cidr($query{inetnum});
     }
     return %query;
 }
@@ -191,14 +206,16 @@ sub apnic_query {
 	    $query{$_} = $tmp{$_};
 	}
     }
-    $query{permission} = 'allowed';
     close $sock;
-    if (defined $query{remarks} && $query{remarks} =~ /address range is not administered by APNIC/) {
+    if ((defined $query{remarks} &&
+	 $query{remarks} =~ /address range is not administered by APNIC/) ||
+	(defined $query{descr} &&
+	 $query{descr} =~ /not allocated to|by APNIC/i)) {
 	%query = ();
     }
-    if (defined $query{descr} &&
-       ($query{descr} =~ /not allocated to|by APNIC/i)) {
-	%query = ();
+    else {
+    	$query{permission} = 'allowed';
+	$query{cidr} = Net::CIDR::range2cidr($query{inetnum});
     }
     return %query;
 }
@@ -222,19 +239,20 @@ sub arin_query {
 	s/\s+$//;
 	my ($field,$value) = split(/:/);
 	$value =~ s/^\s+//;
-	if ($field eq 'OrgName') {
+	if ($field eq 'OrgName' ||
+	    $field eq 'CustName') {
 	    %tmp = %query;
 	    %query = ();
 	    $query{fullinfo} = $tmp{fullinfo};
 	}
 	$query{lc($field)} .= $value;
     }
+    $query{orgname} = $query{custname} if defined $query{custname};
     for (keys %tmp) {
 	if (! defined $query{$_}) {
 	    $query{$_} = $tmp{$_};
 	}
     }
-    $query{permission} = 'allowed';
     close $sock;
     if (defined $query{comment} && $query{comment} =~ /This IP address range is not registered in the ARIN/) {
 	%query = ();
@@ -244,6 +262,7 @@ sub arin_query {
 	    %query = ();
 	}
 	else {
+	    $query{permission} = 'allowed';
 	    $query{descr}   = $query{orgname};
 	    $query{remarks} = $query{comment};
 	    $query{status}  = $query{nettype};
@@ -263,7 +282,8 @@ sub lacnic_query {
     print $sock "$ip\n";
     while (<$sock>) {
 	$query{fullinfo} .= $_;
-	if (/^\%201/) {
+	if (/^\%201/ ||
+	    /^\% Query rate limit exceeded/) {
 	    close $sock;
 	    return (permission=>'denied');
 	}
@@ -284,6 +304,42 @@ sub lacnic_query {
     $query{descr} = $query{owner};
     $query{netname} = $query{ownerid};
     $query{source} = 'LACNIC';
+    $query{cidr} = $query{inetnum};
+    $query{inetnum} = (Net::CIDR::cidr2range($query{cidr}))[0];
+    return %query;
+}
+
+sub afrinic_query {
+
+    my $sock = shift;
+    my $ip = shift;
+    my %query = ();
+
+    $query{fullinfo} = '';
+    print $sock "-r $ip\n";
+    while (<$sock>) {
+        $query{fullinfo} .= $_;
+        if (/^\%201/) {
+            close $sock;
+            return (permission=>'denied');
+        }
+        next if (/^\%/);
+        next if (!/\:/);
+        last if (/^route/);
+        s/\s+$//;
+        my ($field,$value) = split(/:/);
+        $value =~ s/^\s+//;
+        $query{$field} .= $value;
+    }
+    close $sock;
+    if (defined $query{remarks} &&
+	$query{remarks} =~ /country is really worldwide/) {
+        %query = ();
+    }
+    else {
+	$query{permission} = 'allowed';
+	$query{cidr} = Net::CIDR::range2cidr($query{inetnum});
+    }
     return %query;
 }
 sub whois_connect {
@@ -312,36 +368,6 @@ nd time");
     }
     return($sock);
 }
-sub afrinic_query {
-    
-    my $sock = shift;
-    my $ip = shift; 
-    my %query = (); 
-        
-    $query{fullinfo} = '';
-    print $sock "-r $ip\n";
-    while (<$sock>) {
-        $query{fullinfo} .= $_;
-        if (/^\%201/) {
-            close $sock;
-            return (permission=>'denied');
-        }
-        next if (/^\%/);
-        next if (!/\:/);
-        last if (/^route/);
-        s/\s+$//;
-        my ($field,$value) = split(/:/);
-        $value =~ s/^\s+//;
-        $query{$field} .= $value;
-    }       
-    $query{permission} = 'allowed';
-    close $sock;
-    if (defined $query{remarks} && $query{remarks} =~ /The country is really
-worldwide/) {
-        %query = ();
-    }   
-    return %query;
-}           
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!
@@ -363,6 +389,7 @@ Net::Whois::IANA - A universal WHOIS data extractor.
   print "Source: "  . $iana->source()  . "\n";;
   print "Server: "  . $iana->server()  . "\n";;
   print "Inetnum: " . $iana->inetnum() . "\n";;
+  print "CIDR: "    . $iana->cidr()    . "\n";;
 
 
 =head1 ABSTRACT
@@ -429,7 +456,8 @@ being exported.
   the lookup to a single server (of the IANA list) by specifying
   '-whois=>$whois' pair or you can provide a set of your own
   servers by specifying the '-mywhois=>\%mywhois' pair. The latter
-  one overrides all of the IANA list for lookup.
+  one overrides all of the IANA list for lookup. You can also set
+  -debug option in order to trigger some verbosity in the output.
 
   $iana->descr()
 
@@ -446,7 +474,8 @@ being exported.
 
   $iana->inetnum()
 
-    Returns the "inetnum:" field contents of the queried IP.
+    Returns the IP range of the queried IP. Often it is contained
+  within the inetnum field, but it is calculated for LACNIC.
 
   $iana->status()
 
@@ -461,6 +490,11 @@ being exported.
     Returns the server that returned most valuable ntents of
   the queried IP.
 
+  $iana->cidr()
+
+    Returns the CIDR notation (1.2.3.4/5) of the IP's registered
+  range.
+
   $iana->fullinfo()
 
     Returns the complete output of the query.
@@ -474,17 +508,19 @@ within each one of them. Its primary target is to collect info
 for general, shallow statistical purposes.
 
 =head1 CAVEATS
-  
+
   The introduction of AFRINIC server may create some confusion
 among servers. It might be that some entries are existant either in
 both ARIN and AFRINIC or in both RIPE and AFRINIC, and some do not
 exist at all. Moreover, there is a border confusion between Middle
 East and Africa, thus, some Egypt sites appear under RIPE and some
-under AFRINIC.
+under AFRINIC. LACNIC server arbitrarily imposes query rate temporary
+block.
 
 =head1 SEE ALSO
 
-  Net::Whois::IP, Net::Whois::RIPE, IP::Country, Geography::Countries
+  Net::Whois::IP, Net::Whois::RIPE, IP::Country,
+  Geography::Countries, Net::CIDR, NetAddr::IP,
 
 =head1 AUTHOR
 
@@ -492,9 +528,9 @@ Roman M. Parparov, E<lt>romm@empire.tau.ac.il<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003 by Roman M. Parparov
+Copyright 2003-2005 by Roman M. Parparov
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =cut

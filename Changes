@@ -34,3 +34,14 @@ Revision history for Perl extension Net::Whois::IANA.
 
 0.09  Wed Jun 22 11:59:38 IDT 2005
 	- added a test for AFRINIC server
+
+0.10  Thu Jun 23 12:35:17 IDT 2005
+	- fixed failed searches for RIPE, APNIC and AFRINIC
+	- fixed new permission denied response from RIPE
+	- fixed Query rate exceeded response from LACNIC
+	- added CIDR field and function
+	- converted LACNIC inetnum to cidr, and computed 
+	  inetnum range for it
+	- started using Net::CIDR
+	- trapped more cases of uninitialized values in query
+	  hash.
