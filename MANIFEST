@@ -3,6 +3,7 @@ IANA.pm
 Makefile.PL
 MANIFEST
 README
+TODO
 t/apnic.t
 t/arin.t
 t/lacnic.t

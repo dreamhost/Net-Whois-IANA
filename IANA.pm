@@ -8,19 +8,27 @@ use Carp;
 use Exporter;
 
 use Net::CIDR;
+use Bit::Vector;
 
-our @IANA = qw(ripe afrinic apnic arin lacnic);
+our @IANA = qw(ripe arin apnic afrinic lacnic);
 
-our %IANA = (apnic=>
-	     ['whois.apnic.net',43,30],
-	     ripe=>
-	     ['whois.ripe.net',43,30],
-	     arin=>
-	     ['whois.arin.net',43,30],
-	     lacnic=>
-	     ['whois.lacnic.net',43,30],
-	     afrinic=>
-	     ['whois.afrinic.net',43,30],
+our %IANA = (
+	     apnic=>[
+		     ['whois.apnic.net',43,30],
+		    ],
+	     ripe=>[
+		    ['whois.ripe.net',43,30],
+		   ],
+	     arin=>[
+		    ['192.149.252.44',43,30],
+		    ['whois.arin.net',43,30],
+		   ],
+	     lacnic=>[
+		      ['whois.lacnic.net',43,30],
+		     ],
+	     afrinic=>[
+		       ['whois.afrinic.net',43,30],
+		      ],
 	    );
 
 
@@ -40,7 +48,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.10';
+our $VERSION = '0.2';
 
 sub new {
 
@@ -77,14 +85,18 @@ sub whois_query {
     my %param = @_;
     my %source = %IANA;
     my @source = @IANA;
-
-    if (! $param{-ip}) {
-	print "
+    my (
+	$a,
+	@atom,
+       );
+    if (! $param{-ip} || $param{-ip} !~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/) {
+	warn "
 Usage: \$iana->whois_query(\n
                           -ip=>\$ip,\n
                           -debug=>\$debug,\n
                           -whois=>\$whois|-mywhois=>\%mywhois,\n
 )\n";
+	return {};
     }
     if ($param{-whois}) {
 	%source = ();
@@ -96,12 +108,20 @@ Usage: \$iana->whois_query(\n
 	%source = %{$param{-mywhois}};
 	@source = keys %{$param{-mywhois}};
     }
+    $self->{QUERY} = {};
     for my $server (@source) {
 	print "Querying $server ...\n" if $param{-debug};
-	my $host    = ${$source{$server}}[0];
-	my $port    = ${$source{$server}}[1];
-	my $timeout = ${$source{$server}}[2];
-	my $sock = &whois_connect($host,$port,$timeout);
+	my $sock;
+	my $i = 0;
+	my $host;
+	do {
+	    $host    = ${$source{$server}}[$i]->[0];
+	    my $port    = ${$source{$server}}[$i]->[1];
+	    my $timeout = ${$source{$server}}[$i]->[2];
+	    $sock = &whois_connect($host,$port,$timeout);
+	    $i++;
+	} until ($sock || defined ${$source{$server}}[$i]);
+	next unless $sock;
 	my %query;
 	if ($server eq 'ripe') {
 	    %query = &ripe_query($sock,$param{-ip});
@@ -162,15 +182,20 @@ sub ripe_query {
 	last if (/^route/);
     }
     close $sock;
+    return unless defined $query{country};
     if ((defined $query{remarks} &&
 	 $query{remarks} =~ /The country is really world wide/) ||
-	$query{netname} =~ /IANA-BLK/ ||
-	$query{country} =~ /world wide/) {
+	(defined $query{netname} &&
+	 $query{netname} =~ /IANA-BLK/) ||
+        (defined $query{netname} &&
+         $query{netname} =~ /AFRINIC-NET-TRANSFERRED/) ||
+	(defined $query{country} &&
+	 $query{country} =~ /world wide/)) {
 	%query = ();
     }
     else {
 	$query{permission} = 'allowed';
-        $query{cidr} = Net::CIDR::range2cidr($query{inetnum});
+        @{$query{cidr}} = Net::CIDR::range2cidr($query{inetnum});
     }
     return %query;
 }
@@ -210,12 +235,13 @@ sub apnic_query {
     if ((defined $query{remarks} &&
 	 $query{remarks} =~ /address range is not administered by APNIC/) ||
 	(defined $query{descr} &&
-	 $query{descr} =~ /not allocated to|by APNIC/i)) {
+	 ($query{descr} =~ /not allocated to|by APNIC/i) ||
+	 ($query{descr} =~ /General placeholder reference/i))) {
 	%query = ();
     }
     else {
     	$query{permission} = 'allowed';
-	$query{cidr} = Net::CIDR::range2cidr($query{inetnum});
+	$query{cidr} = [Net::CIDR::range2cidr($query{inetnum})];
     }
     return %query;
 }
@@ -234,6 +260,7 @@ sub arin_query {
 	    close $sock;
 	    return (permission=>'denied');
 	}
+	return () if /no match found for/i;
 	next if (/^\#/);
 	next if (!/\:/);
 	s/\s+$//;
@@ -254,6 +281,7 @@ sub arin_query {
 	}
     }
     close $sock;
+    return () unless $query{country};
     if (defined $query{comment} && $query{comment} =~ /This IP address range is not registered in the ARIN/) {
 	%query = ();
     }
@@ -268,6 +296,12 @@ sub arin_query {
 	    $query{status}  = $query{nettype};
 	    $query{inetnum} = $query{netrange};
 	    $query{source}  = 'ARIN';
+	    if($query{cidr} =~ /\,/) {
+		$query{cidr} = [split(/\, /,$query{cidr})];
+	    }
+	    else {
+	    	$query{cidr} = [$query{cidr}];
+	    }
 	}
     }
     return %query;
@@ -304,8 +338,14 @@ sub lacnic_query {
     $query{descr} = $query{owner};
     $query{netname} = $query{ownerid};
     $query{source} = 'LACNIC';
-    $query{cidr} = $query{inetnum};
-    $query{inetnum} = (Net::CIDR::cidr2range($query{cidr}))[0];
+    my ($zone, $span) = split(/\//,$query{inetnum});
+    my (@atom) = split (/\./,$zone);
+    if (scalar @atom < 4) {
+	$zone .= '.0' x (4 - scalar @atom);
+    }
+    $query{cidr} = [$zone . '/' . $span];
+
+    $query{inetnum} = (Net::CIDR::cidr2range(@{$query{cidr}}))[0];
     return %query;
 }
 
@@ -332,13 +372,15 @@ sub afrinic_query {
         $query{$field} .= $value;
     }
     close $sock;
-    if (defined $query{remarks} &&
-	$query{remarks} =~ /country is really worldwide/) {
+    if ((defined $query{remarks} &&
+	 $query{remarks} =~ /country is really worldwide/) ||
+	(defined $query{descr} &&
+	 $query{descr} =~ /Here for in-addr.arpa authentication/)) {
         %query = ();
     }
     else {
 	$query{permission} = 'allowed';
-	$query{cidr} = Net::CIDR::range2cidr($query{inetnum});
+	@{$query{cidr}} = Net::CIDR::range2cidr($query{inetnum});
     }
     return %query;
 }
@@ -352,7 +394,7 @@ sub whois_connect {
                                      Timeout=>$timeout,
                                     );
     unless($sock) {
-        carp("Cannot to connect to $host at port $port");
+        carp("Cannot connect to $host at port $port");
 	carp("$@");
         sleep(5);
         $sock = IO::Socket::INET->new(
@@ -361,12 +403,81 @@ sub whois_connect {
                                       Timeout=>$timeout,
                                      );
         unless($sock) {
-            croak("Cannot to connect to $host at port $port for the seco
+            carp("Cannot connect to $host at port $port for the seco
 nd time");
-	    croak("$@");
+	    carp("$@");
         }
     }
     return($sock);
+}
+sub is_mine {
+
+    my (
+	$self,
+	$ip,
+	@cidr,
+       ) = @_;
+
+    my (
+	$ipvec,
+	$cidrvec,
+	$resvec,
+	$cidrip,
+	$cidrng,
+	$a,
+	$c,
+	$ivec,
+	$cvec,
+	@catom,
+	@atom,
+       );
+    
+    return () unless $ip =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/;
+    @atom = (
+	     $1,
+	     $2,
+	     $3,
+	     $4,
+	    );
+    for $a (@atom) {
+	return {} if $a > 255;
+    }
+    $self->{atom} = [@atom];
+
+    @cidr = @{$self->cidr()} unless @cidr;
+    for $a (@{$self->{atom}}) {
+	unless ($ipvec) {
+	    $ipvec = Bit::Vector->new_Dec(8,$a);
+	}
+	else {
+	    $ipvec = Bit::Vector->Concat_List($ipvec,Bit::Vector->new_Dec(8,$a));
+	}
+    }
+    for $c (@cidr) {
+	($cidrip,$cidrng) = split(/\//,$c);
+	@catom = split(/\./,$cidrip);
+	for $a (@catom) {
+	    unless ($cidrvec) {
+		$cidrvec = Bit::Vector->new_Dec(8,$a);
+	    }
+	    else {
+		$cidrvec = Bit::Vector->Concat_List($cidrvec,Bit::Vector->new_Dec(8,$a));
+	    }
+	}
+	$resvec = Bit::Vector->new($cidrng);
+	$ivec = $ipvec->Clone();
+	$ivec->Interval_Reverse(0,$ipvec->Size()-1);
+	$ivec->Resize($cidrng);
+	$cvec = $cidrvec;
+	$cvec->Interval_Reverse(0,$cidrvec->Size()-1);
+	$cvec->Resize($cidrng);
+	$resvec->Xor($ivec,$cvec);
+	if ($resvec->is_empty()) {
+	    return $c;
+	}
+	$cidrvec = undef;
+    }
+    return 0;
 }
 1;
 __END__
@@ -499,13 +610,20 @@ being exported.
 
     Returns the complete output of the query.
 
+  $iana->is_mine($ip,@cidrrange)
+
+    Checks if the ip is within one of the CIDR ranges given by
+  @cidrrange. Returns 0 if none, or the first range that matches.
+  Uses Bit::Vector and bit operations extensively.
+
 =head1 BUGS
 
   As stated many times before, this module is not completely
 homogeneous and precise because of the differences between
 outputs of the IANA servers and because of some inconsistencies
 within each one of them. Its primary target is to collect info
-for general, shallow statistical purposes.
+for general, shallow statistical purposes. The is_mine() method
+might be optimized.
 
 =head1 CAVEATS
 
@@ -515,12 +633,14 @@ both ARIN and AFRINIC or in both RIPE and AFRINIC, and some do not
 exist at all. Moreover, there is a border confusion between Middle
 East and Africa, thus, some Egypt sites appear under RIPE and some
 under AFRINIC. LACNIC server arbitrarily imposes query rate temporary
-block.
+block. ARIN "subconciously" redirects the client to appropriate
+server sometimes. This redirection is not reflected yet by the package.
 
 =head1 SEE ALSO
 
   Net::Whois::IP, Net::Whois::RIPE, IP::Country,
   Geography::Countries, Net::CIDR, NetAddr::IP,
+  Bit::Vector
 
 =head1 AUTHOR
 

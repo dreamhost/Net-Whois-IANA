@@ -45,3 +45,15 @@ Revision history for Perl extension Net::Whois::IANA.
 	- started using Net::CIDR
 	- trapped more cases of uninitialized values in query
 	  hash.
+
+0.2   Mon Aug 22 11:33:51 IDT 2005
+	- changed the data structure of the service to allow usage
+	  of reserve servers.
+	- added looping over lists of servers per server geographical
+	  group; ARIN reserve server is used already.
+	- added is_mine() method for IP beloning to a certain CIDR
+	  range using Bit::Vector
+	- fixed more failure responses.
+	- Bit::Vector added as prerequisite.
+	- updated README.
+	- created a TODO file.

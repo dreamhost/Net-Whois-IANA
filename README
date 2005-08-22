@@ -3,9 +3,9 @@ Net/Whois/IANA version 0.04
 
   This is a simple module to extract the descriptive whois
 information about various IPs as they are stored in the four
-regional whois registries of IANA - RIPE (Europe, Middle East,
-North Africa), APNIC (Asia/Pacific), ARIN (North America and
-Africa) and LACNIC (Latin American & Caribbean).
+regional whois registries of IANA - RIPE (Europe, Middle East),
+APNIC (Asia/Pacific), ARIN (North America), AFRINIC (Africa)
+and LACNIC (Latin American & Caribbean).
 
   It is designed to serve statistical harvesters of various
 access logs and likewise, therefore it only collects partial
@@ -30,13 +30,15 @@ DEPENDENCIES
 This module requires these other modules and libraries:
 
 IO::Socket
+Net::CIDR;
+Bit::Vector;
 Perl 5.006+
 
 COPYRIGHT AND LICENCE
 
 Put the correct copyright and licence information here.
 
-Copyright (C) 2003,2004 Roman M. Parparov <romm@empire.tau.ac.il>
+Copyright (C) 2003-2005 Roman M. Parparov <romm@empire.tau.ac.il>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
