@@ -48,7 +48,7 @@ our @EXPORT= qw(
 		fullinfo
 	       );
 
-our $VERSION = '0.2';
+our $VERSION = '0.21';
 
 sub new {
 

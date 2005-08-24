@@ -57,3 +57,6 @@ Revision history for Perl extension Net::Whois::IANA.
 	- Bit::Vector added as prerequisite.
 	- updated README.
 	- created a TODO file.
+
+0.21  Wed Aug 24 11:32:50 IDT 2005
+	- fixed prerequisites

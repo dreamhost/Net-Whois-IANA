@@ -1,10 +1,12 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Net-Whois-IANA
-version:      0.2
+version:      0.21
 version_from: IANA.pm
 installdirs:  site
 requires:
+    Bit::Vector:                   6.4
+    Net::CIDR:                     0.05
 
 distribution_type: module
 generated_by: ExtUtils::MakeMaker version 6.21
