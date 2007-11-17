@@ -1,4 +1,5 @@
 Changes
+CREDITS
 IANA.pm
 Makefile.PL
 MANIFEST
@@ -9,4 +10,5 @@ t/arin.t
 t/lacnic.t
 t/ripe.t
 t/afrinic.t
+t/brnic.t
 META.yml                                 Module meta-data (added by MakeMaker)

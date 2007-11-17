@@ -60,3 +60,12 @@ Revision history for Perl extension Net::Whois::IANA.
 
 0.21  Wed Aug 24 11:32:50 IDT 2005
 	- fixed prerequisites
+0.22  Sat Nov 17 15:37:44 IST 2007
+	- fixed lacnic test and added a brnic test - Brasil addresses
+	  now use their own NIC server
+	- added some parsing for lacnic responses
+	- added heuristics to guess abuse report address
+	- incorporated some supplied patches
+	- introduced CREDITS file
+	- changed copyright notice as I distribute this module under my
+	  own company's name (the license remains the same)

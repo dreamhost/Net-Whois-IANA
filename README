@@ -32,13 +32,13 @@ This module requires these other modules and libraries:
 IO::Socket
 Net::CIDR;
 Bit::Vector;
-Perl 5.006+
+Perl 5.008+
 
 COPYRIGHT AND LICENCE
 
 Put the correct copyright and licence information here.
 
-Copyright (C) 2003-2005 Roman M. Parparov <romm@empire.tau.ac.il>
+Copyright (C) 2003-2007 Bolet Consulting <bolet@parparov.com>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
