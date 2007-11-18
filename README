@@ -1,8 +1,8 @@
-Net/Whois/IANA version 0.04
+Net/Whois/IANA version 0.23
 ===========================
 
   This is a simple module to extract the descriptive whois
-information about various IPs as they are stored in the four
+information about various IPs as they are stored in the five
 regional whois registries of IANA - RIPE (Europe, Middle East),
 APNIC (Asia/Pacific), ARIN (North America), AFRINIC (Africa)
 and LACNIC (Latin American & Caribbean).
@@ -15,6 +15,14 @@ and [rarely] unprecise information.
 This is just something I had to write because none of them s
 uited my purpose. It is conceptually based on Net::Whois::IP
 by Ben Schmitz <bschmitz@orbitz.com>.
+
+* Important Note 1:
+When make test, sometimes a test may fail merely due to network problems.
+
+* Important Note 2:
+When testing too eagerly, i.e. querying the IANA registries too often, you
+may get your access to them suspended, temporarily or permanently.
+Handle with care!
 
 INSTALLATION
 

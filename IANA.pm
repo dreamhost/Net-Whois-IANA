@@ -45,10 +45,11 @@ our @EXPORT= qw(
 	status
 	source
 	server
+	abuse
 	fullinfo
 );
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 sub new {
 
@@ -158,7 +159,6 @@ Usage: \$iana->whois_query(
 		}
 		unless ($query{abuse}) {
 			if ($query{fullinfo} =~ /(\S*abuse\S*\@\S+)/m) {
-				print "ABABAB $1\n";
 				$query{abuse} = $1;
 			}
 			elsif ($query{emai} || $query{'e-mail'} || $query{orgtechemail}) {
@@ -354,7 +354,8 @@ sub lacnic_query {
 		s/\s+$//;
 		my ($field,$value) = split(/:/);
 		$value =~ s/^\s+//;
-		$query{lc($field)} .= ($query{lc($field)} ?  ' ' : '') . $value;
+		next if $field eq 'country' && $query{country};
+		$query{lc($field)} .= ( $query{lc($field)} ?  ' ' : '') . $value;
     }
     $query{permission} = 'allowed';
     close $sock;
@@ -648,6 +649,12 @@ being exported.
   @cidrrange. Returns 0 if none, or the first range that matches.
   Uses Bit::Vector and bit operations extensively.
 
+  $iana->abuse()
+
+    Yields the best guess for the potential abuse report email address
+  candidate. This is not a very reliable thing, but sometimes it proves
+  useful.
+
 =head1 BUGS
 
   As stated many times before, this module is not completely
@@ -676,11 +683,11 @@ server sometimes. This redirection is not reflected yet by the package.
 
 =head1 AUTHOR
 
-Roman M. Parparov, E<lt>romm@empire.tau.ac.il<gt>
+Roman M. Parparov, E<lt>roman@parparov.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003-2005 by Roman M. Parparov
+Copyright 2003-2007 Bolet Consulting <bolet@parparov.com>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

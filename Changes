@@ -69,3 +69,7 @@ Revision history for Perl extension Net::Whois::IANA.
 	- introduced CREDITS file
 	- changed copyright notice as I distribute this module under my
 	  own company's name (the license remains the same)
+0.23  Sun Nov 18 17:25:04 IST 2007
+	- fixed an error in lacnic parsing
+	- updated README and inline documentation
+	- updated email and copyright notice with the .pm

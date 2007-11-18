@@ -1,15 +1,12 @@
---- #YAML:1.0
-name:                Net-Whois-IANA
-version:             0.22
-abstract:            A universal WHOIS data extractor.
-license:             ~
-generated_by:        ExtUtils::MakeMaker version 6.36
-distribution_type:   module
-requires:     
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Net-Whois-IANA
+version:      0.23
+version_from: IANA.pm
+installdirs:  site
+requires:
     Bit::Vector:                   6.4
     Net::CIDR:                     0.05
-meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
-    version: 1.2
-author:
-    - Roman M. Parparov <romm@empire.tau.ac.il>
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17
