@@ -1,5 +1,15 @@
 Revision history for Perl extension Net::Whois::IANA.
 
+0.40  Wed Mar 16 13:43:28 IST 2011
+	- Switch to Module::Build and Build.PL
+	- Major code cleanup
+	- Optimization of queries
+	- Introduction of autoloading
+
+0.30  Thu May 27 12:13:14 IDT 2010
+	- Bug fixing and patch incorporation after a long stagnation
+	- Update of whois parser according to changes accumulated
+
 0.23  Sun Nov 18 17:25:04 IST 2007
 	- fixed an error in lacnic parsing
 	- updated README and inline documentation

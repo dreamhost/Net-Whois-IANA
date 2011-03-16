@@ -9,6 +9,8 @@ use Net::Whois::IANA;
 
 my $sock;
 
+print STDERR "\n\nDO NOT PANIC ABOUT THE COMING ERRORS. THEY ARE OK\n\n";
+
 $sock = Net::Whois::IANA::whois_connect('whois.ripe.net', 43, 30);
 isa_ok($sock, 'IO::Socket::INET', 'socket ok');
 $sock = Net::Whois::IANA::whois_connect('non-existant host', 43, 30);

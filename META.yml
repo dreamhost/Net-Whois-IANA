@@ -3,8 +3,6 @@ abstract: 'A universal WHOIS data extractor.'
 author:
   - 'Roman M. Parparov <roman@parparov.com>'
 build_requires:
-  IO::Socket: 0
-  Net::CIDR: 0
   Test::More: 0
 configure_requires:
   Module::Build: 0.36
@@ -17,7 +15,10 @@ name: Net-Whois-IANA
 provides:
   Net::Whois::IANA:
     file: lib/Net/Whois/IANA.pm
-    version: 0.30
+    version: 0.40
+requires:
+  IO::Socket: 0
+  Net::CIDR: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.30
+version: 0.40

@@ -2,15 +2,15 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
+  'PL_FILES' => {},
+  'INSTALLDIRS' => 'site',
   'NAME' => 'Net::Whois::IANA',
+  'EXE_FILES' => [],
   'VERSION_FROM' => 'lib/Net/Whois/IANA.pm',
   'PREREQ_PM' => {
+                   'Test::More' => 0,
                    'IO::Socket' => 0,
-                   'Net::CIDR' => 0,
-                   'Test::More' => 0
-                 },
-  'INSTALLDIRS' => 'site',
-  'EXE_FILES' => [],
-  'PL_FILES' => {}
+                   'Net::CIDR' => 0
+                 }
 )
 ;
