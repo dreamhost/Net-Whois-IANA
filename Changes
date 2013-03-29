@@ -1,5 +1,13 @@
 Revision history for Perl extension Net::Whois::IANA.
 
+0.41  Fri Mar 29 12:11:19 PDT 2013
+	- Fixed bug causing infinite loops when connecting to servers
+          (thanks to 
+        - Fixed example usage of ->cidr() method
+          (thanks to Jabra for noticing)
+        - Cleaned up example usage
+        - Padded some more error prone code
+
 0.40  Wed Mar 16 13:43:28 IST 2011
 	- Switch to Module::Build and Build.PL
 	- Major code cleanup

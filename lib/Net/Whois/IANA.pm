@@ -43,7 +43,7 @@ our @EXPORT = qw(
 	%IANA
 );
 
-our $VERSION = '0.40';
+our $VERSION = '0.41';
 
 sub new ($) {
 
@@ -75,9 +75,10 @@ sub whois_connect ($;$$) {
     my $host    = shift;
 	my $port;
 	my $timeout;
+
 	if (ref $host && ref $host eq 'ARRAY') {
-		$port    = $host->[1];
-		$timeout = $host->[2];
+		$port    = $host->[1] || $WHOIS_PORT;
+		$timeout = $host->[2] || $WHOIS_TIMEOUT;
 		$host    = $host->[0];
 	}
 	else {
@@ -189,8 +190,8 @@ sub source_connect ($$) {
 			ref $self->{source}{$source_name}[$i][3] &&
 			ref $self->{source}{$source_name}[$i][3] eq 'CODE' ?
 				$self->{source}{$source_name}[$i][3] : \&default_query;
-		$i++;
 		$self->{whois_host} = $self->{source}{$source_name}[$i][0];
+		$i++;
 	} until ($sock || !defined $self->{source}{$source_name}[$i]);
 	return $sock;
 }
@@ -295,7 +296,7 @@ sub ripe_process_query (%) {
     }
     else {
 		$query{permission} = 'allowed';
-        @{$query{cidr}} = Net::CIDR::range2cidr($query{inetnum});
+        $query{cidr} = [ Net::CIDR::range2cidr($query{inetnum}) ];
     }
     return %query;
 }
@@ -533,7 +534,7 @@ sub afrinic_process_query (%) {
 		defined $query{descr} &&
 		$query{descr} =~ /Here for in-addr\.arpa authentication/;
 	$query{permission} = 'allowed';
-	@{$query{cidr}} = Net::CIDR::range2cidr($query{inetnum});
+	$query{cidr} = [ Net::CIDR::range2cidr($query{inetnum}) ];
     return %query;
 }
 
@@ -577,14 +578,14 @@ Net::Whois::IANA - A universal WHOIS data extractor.
   my $ip = '132.66.16.2';
   my $iana = new Net::Whois::IANA;
   $iana->whois_query(-ip=>$ip);
-  print "Country: " . $iana->country() . "\n";;
-  print "Netname: " . $iana->netname() . "\n";;
-  print "Descr: "   . $iana->descr()   . "\n";;
-  print "Status: "  . $iana->status()  . "\n";;
-  print "Source: "  . $iana->source()  . "\n";;
-  print "Server: "  . $iana->server()  . "\n";;
-  print "Inetnum: " . $iana->inetnum() . "\n";;
-  print "CIDR: "    . $iana->cidr()    . "\n";;
+  print "Country: " , $iana->country()            , "\n";
+  print "Netname: " , $iana->netname()            , "\n";
+  print "Descr: "   , $iana->descr()              , "\n";
+  print "Status: "  , $iana->status()             , "\n";
+  print "Source: "  , $iana->source()             , "\n";
+  print "Server: "  , $iana->server()             , "\n";
+  print "Inetnum: " , $iana->inetnum()            , "\n";
+  print "CIDR: "    , join(",", $iana->cidr())    , "\n";
 
 
 =head1 ABSTRACT
@@ -687,7 +688,7 @@ being exported.
 
   $iana->cidr()
 
-    Returns the CIDR notation (1.2.3.4/5) of the IP's registered
+    Returns an array in CIDR notation (1.2.3.4/5) of the IP's registered
   range.
 
   $iana->fullinfo()
